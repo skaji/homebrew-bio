@@ -1,48 +1,10 @@
 version: 2
 jobs:
-  build-linux:
-    docker:
-      - image: linuxbrew/linuxbrew
-    environment:
-      CIRCLE_REPOSITORY_URL: https://github.com/brewsci/homebrew-bio
-      HOMEBREW_DEVELOPER: 1
-      HOMEBREW_NO_AUTO_UPDATE: 1
-    steps:
-      - run: |
-          cd /home/linuxbrew/.linuxbrew/Homebrew
-          git fetch origin --unshallow --tags
-          git reset --hard origin/master
-          cd /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/homebrew/homebrew-core
-          git fetch origin --depth=1
-          git reset --hard origin/master
-      - checkout
-      - run: git remote set-url origin $CIRCLE_REPOSITORY_URL
-      - run: if [ -e .git/shallow ]; then echo git fetch --unshallow; fi
-      - run: git fetch origin
-      - run: git config --global user.name LinuxbrewTestBot
-      - run: git config --global user.email testbot@linuxbrew.sh
-      - run: chmod 0644 Formula/*.rb
-      - run: mkdir -p /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/$CIRCLE_PROJECT_USERNAME
-      - run: cp -a . /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME
-      - run: mkdir /home/linuxbrew/bottles
-      - run: >-
-          cd /home/linuxbrew/bottles;
-          umask 022;
-          PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH";
-          brew install patchelf
-          && brew tap linuxbrew/xorg
-          && brew test-bot --bintray-org=linuxbrew --git-name=LinuxbrewTestBot --git-email=testbot@linuxbrew.sh
-      - persist_to_workspace:
-          root: /home/linuxbrew
-          paths:
-            - bottles
-      - store_test_results:
-          path: /home/linuxbrew/bottles
   build-macos:
     macos:
       xcode: "9.0"
     environment:
-      CIRCLE_REPOSITORY_URL: https://github.com/brewsci/homebrew-bio
+      CIRCLE_REPOSITORY_URL: https://github.com/skaji/homebrew-bio
       HOMEBREW_DEVELOPER: 1
       HOMEBREW_NO_AUTO_UPDATE: 1
     steps:
@@ -91,12 +53,7 @@ workflows:
   version: 2
   test-bot:
     jobs:
-      - build-linux
       - build-macos
       - collect-bottles:
           requires:
-            - build-linux
             - build-macos
-notify:
-  webhooks:
-    - url: https://p4142ivuwk.execute-api.us-west-2.amazonaws.com/prod/ci-upload
